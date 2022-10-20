@@ -46,10 +46,20 @@ public class SampleApp extends Application {
             .build());
 
     // Initialize a new instance of the PostHog client.
-    PostHog.Builder builder =
-        new PostHog.Builder(this, POSTHOG_API_KEY, "https://app.posthog.com")
-            .captureApplicationLifecycleEvents()
-            .recordScreenViews();
+    PostHog.Builder builder = new PostHog.Builder(this, POSTHOG_API_KEY, "https://app.posthog.com")
+        .captureApplicationLifecycleEvents()
+        .recordScreenViews()
+        .trackingBlacklist(new String[] {
+            "$network_carrier",
+            "$network_bluetooth",
+            "$screen_density",
+            "$screen_width",
+            "$screen_height",
+            "$device_model",
+            "$network_wifi",
+            "$lib_version",
+            "$locale"
+        });
 
     // Set the initialized instance as a globally accessible instance.
     PostHog.setSingletonInstance(builder.build());
@@ -58,6 +68,7 @@ public class SampleApp extends Application {
     PostHog posthog = PostHog.with(this);
 
     // Identify from the getgo
-    PostHog.with(this).identify("test_distinct_id", new Properties().putValue("name", "my name").putValue("email", "user@posthog.com"));
+    PostHog.with(this).identify("test_distinct_id",
+        new Properties().putValue("name", "my name").putValue("email", "user@posthog.com"));
   }
 }

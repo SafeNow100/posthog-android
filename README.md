@@ -1,5 +1,7 @@
 # PostHog Android
 
+**Fork note:** This fork tries to stay upstream and implements a `PostHog.Builder.trackingBlacklist()` method to configure properties like `$screen_width` etc. to be ignored. This reduces payload and allows for anonymous tracking w/o being able to create a fingerprint from additional data. The latter was our main purpose for the modification.
+
 Please see the main [PostHog docs](https://posthog.com/docs).
 
 Specifically, the [Android integration](https://posthog.com/docs/integrations/android-integration) details.

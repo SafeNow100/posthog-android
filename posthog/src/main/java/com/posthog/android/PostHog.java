@@ -60,6 +60,8 @@ import com.posthog.android.internal.Utils;
 import com.posthog.android.internal.Utils.PostHogNetworkExecutorService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,6 +129,7 @@ public class PostHog {
   private final BooleanPreference optOut;
   private final Integration integration;
   private final PostHogFeatureFlags featureFlags;
+  private final List<String> trackingBlacklist;
 
   volatile boolean shutdown;
 
@@ -209,6 +212,7 @@ public class PostHog {
       BooleanPreference optOut,
       Crypto crypto,
       @NonNull List<Middleware> middlewares,
+      @NonNull List<String> trackingBlacklist,
       Integration integration,
       PostHogFeatureFlags featureFlags
       ) {
@@ -242,6 +246,8 @@ public class PostHog {
               .build();
     }
     this.featureFlags = featureFlags;
+
+    this.trackingBlacklist = trackingBlacklist;
 
     namespaceSharedPreferences();
 
@@ -772,8 +778,18 @@ public class PostHog {
 
     PostHogContext contextCopy = new PostHogContext(posthogContext);
 
-    for (Map.Entry<String, Object> pair : options.context().entrySet()) {
-      contextCopy.put(pair.getKey(), pair.getValue());
+    if (this.trackingBlacklist.isEmpty()) {
+      for (Map.Entry<String, Object> pair : options.context().entrySet()) {
+        contextCopy.put(pair.getKey(), pair.getValue());
+      }
+    } else {
+      for (Map.Entry<String, Object> pair : options.context().entrySet()) {
+        String key = pair.getKey();
+
+        if (!this.trackingBlacklist.contains(key)) {
+          contextCopy.put(pair.getKey(), pair.getValue());
+        }
+      }
     }
 
     contextCopy = contextCopy.unmodifiableCopy();
@@ -974,6 +990,7 @@ public class PostHog {
     private List<Middleware> middlewares;
     private boolean captureApplicationLifecycleEvents = false;
     private boolean recordScreenViews = false;
+    private String[] trackingBlacklist = {};
     private boolean captureDeepLinks = false;
     private Crypto crypto;
     private Integration integration;
@@ -1143,6 +1160,17 @@ public class PostHog {
       return this;
     }
 
+    /** Allow optional filtering of properties. */
+    public Builder trackingBlacklist(String[] trackingBlacklist) {
+      this.trackingBlacklist = trackingBlacklist;
+      return this;
+    }
+
+    /** Returns the optional blacklist. **/
+    public String[] getTrackingBlacklist() {
+      return this.trackingBlacklist;
+    }
+
     /** Automatically capture deep links as part of the screen call. */
     public Builder captureDeepLinks() {
       this.captureDeepLinks = true;
@@ -1243,6 +1271,8 @@ public class PostHog {
         executor = Executors.newSingleThreadExecutor();
       }
 
+      List<String> trackingBlacklist = Utils.immutableCopyOf(Arrays.asList(this.trackingBlacklist));
+
       return new PostHog(
           application,
           networkExecutor,
@@ -1267,8 +1297,9 @@ public class PostHog {
           optOut,
           crypto,
           middlewares,
-              integration,
-              null);
+          trackingBlacklist,
+          integration,
+          null);
     }
   }
 
